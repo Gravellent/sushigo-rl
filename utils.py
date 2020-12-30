@@ -24,7 +24,7 @@ CARD_ON_BOARD = {
 }
 
 CARDS = {
-    0: 'Sash1imi',
+    0: 'Sashimi',
     1: 'Egg Nigiri',
     2: 'Salmon Nigiri',
     3: 'Squid Nigiri',

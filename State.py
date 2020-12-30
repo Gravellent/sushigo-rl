@@ -22,23 +22,29 @@ class State:
                     random.shuffle(self.card_pool)
                 p.draw(self.card_pool.pop())
 
-    def play(self, output_result=False):
-        self.deal()
-        # print(self.players[0].hand, self.players[1].hand)
-        for turn in range(self.starting_hand_size): # Round num is same as starting hand sizer
-            all_player_boards = []  # A list of (player class, player board), to check if it's the player's board
+    def play(self, num_of_rounds=1, output_result=False):
+        self.scoreboard = [0] * len(self.players)
+        for r in range(num_of_rounds):
+            # Clean up board
             for p in self.players:
-                all_player_boards.append((p, p.board))
-            for p in self.players:
-                p.pick_a_card(all_player_boards)
-            self.pass_around()
-        for i, p in enumerate(self.players):
-            self.scoreboard.append(p.get_score())
+                p.board = []
 
-        # Adjustment for Maki
-        maki_score = get_maki_score([_.board[10] for _ in self.players])
-        for i in range(len(maki_score)):
-            self.scoreboard[i] += maki_score[i]
+            self.deal()
+            # print(self.players[0].hand, self.players[1].hand)
+            for turn in range(self.starting_hand_size): # Round num is same as starting hand sizer
+                all_player_boards = []  # A list of (player class, player board), to check if it's the player's board
+                for p in self.players:
+                    all_player_boards.append((p, p.board))
+                for p in self.players:
+                    p.pick_a_card(all_player_boards)
+                self.pass_around()
+            for i, p in enumerate(self.players):
+                self.scoreboard[i] += p.get_score()
+
+            # Adjustment for Maki
+            maki_score = get_maki_score([_.board[10] for _ in self.players])
+            for i in range(len(maki_score)):
+                self.scoreboard[i] += maki_score[i]
 
         max_score = max(self.scoreboard)
         if output_result:
@@ -50,35 +56,15 @@ class State:
         for i, p in enumerate(self.players):
             if self.scoreboard[i] == max_score:
                 self.stats[i] += 1
-                p.feed_reward(1)
+                p.feed_reward(max(1, len(self.players) - 1))
             else:
                 p.feed_reward(-1)
-        # return winner
 
-    # def play_human(self):
-    #     self.deal()
-    #     for turn in range(self.starting_hand_size):  # Round num is same as starting hand sizer
-    #         for p in self.players:
-    #             p.pick_a_card()
-    #         self.pass_around()
-    #     for i, p in enumerate(self.players):
-    #         self.scoreboard.append(p.get_score())
-    #     # Adjustment for Maki
-    #     maki_score = get_maki_score([_.board[10] for _ in self.players])
-    #     for i in range(len(maki_score)):
-    #         self.scoreboard[i] += maki_score[i]
-    #     max_score = max(self.scoreboard)
-    #
-    #     # Adjustment for Maki
-    #     maki_score = get_maki_score([_.board[10] for _ in self.players])
-    #     for i in range(len(maki_score)):
-    #         self.scoreboard[i] += maki_score[i]
-
-    def play_games(self, num_of_games=1, output_result=False):
+    def play_games(self, num_of_games=1, round_per_game=1, output_result=False):
         self.stats = [0] * len(self.players)
         for i in range(num_of_games):
             self.refresh_state()
-            self.play(output_result=output_result)
+            self.play(output_result=output_result, num_of_rounds=round_per_game)
         # print(self.stats)
 
     def pass_around(self):

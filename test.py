@@ -104,7 +104,16 @@ class TestState(unittest.TestCase):
         self.state = State(card_pool)
         self.state.starting_hand_size = 4
         self.state.refresh_state()
-        self.p1 = DeepPlayer("Simple Linear", memory_for_board=len(CARD_ON_BOARD))
+        self.p1 = DeepPlayer("Simple Linear", num_of_opponents=0)
         self.state.add_player(self.p1)
         self.state.play_games(1)
         # print(self.p1.model)
+
+    def test_multiple_games(self):
+        card_pool = [0] * 10
+        self.state = State(card_pool)
+        self.state.starting_hand_size = 3
+        self.state.refresh_state()
+        self.p1 = RandomPlayer("Random")
+        self.state.add_player(self.p1)
+        self.state.play_games(num_of_games=1, output_result=False, round_per_game=3)
