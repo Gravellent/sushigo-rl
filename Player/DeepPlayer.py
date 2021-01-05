@@ -74,9 +74,9 @@ class DeepPlayer(BasePlayer):
     def feed_reward(self, reward):
         for state, action in self.states_in_game[::-1]:
             self.optimizer.zero_grad()
-            state_tensor = torch.FloatTensor(state)
+            state_tensor = torch.FloatTensor(state).to(DEVICE)
             y_pred = self.model(state_tensor)
-            y_true = y_pred.detach().clone()
+            y_true = y_pred.detach().clone().to(DEVICE)
             y_true[action] = reward
             loss = self.criterion(y_pred, y_true)
             loss.backward()
