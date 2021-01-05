@@ -33,7 +33,3 @@ class HumanPlayer(BasePlayer):
 
     def feed_reward(self, reward):
         return
-
-    def prepare_for_next_round(self):
-        self.hand = []
-        self.board = [0] * len(CARD_ON_BOARD)

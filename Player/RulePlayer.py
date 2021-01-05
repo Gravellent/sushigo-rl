@@ -9,7 +9,7 @@ class RulePlayer(BasePlayer):
         self.playstyle = playstyle
         self.prepare_for_next_round()
 
-        self.priority = [3, 0, 5, 2, 9, 6, 8, 7, 1, 4]
+        self.priority = [4, 3, 2, 0, 10, 5, 9, 8, 7, 6, 1]
 
     def draw(self, card):
         self.hand.append(card)
@@ -27,6 +27,3 @@ class RulePlayer(BasePlayer):
     def feed_reward(self, reward):
         return
 
-    def prepare_for_next_round(self):
-        self.hand = []
-        self.board = [0] * len(CARD_ON_BOARD)

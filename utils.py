@@ -21,6 +21,8 @@ CARD_ON_BOARD = {
     8: 'Tempura',
     9: 'Dumpling',
     10: 'Maki',
+    11: 'Pudding',
+    12: 'Chopsticks',
 }
 
 CARDS = {
@@ -34,8 +36,8 @@ CARDS = {
     7: '1 Maki',
     8: '2 Maki',
     9: '3 Maki',
-    # 10: 'Pudding',  # Not implemented
-    # 11: 'Chopsticks',  # Not implemented
+    10: 'Pudding',  # Not implemented
+    11: 'Chopsticks',  # Not implemented
 }
 
 
@@ -85,6 +87,8 @@ def add_a_card_to_board(board, card):
         board[10] += 2
     if card == 9:
         board[10] += 3
+    if card == 10:
+        board[11] += 1
 
 
 def get_maki_score(maki_cnt_list):
@@ -101,6 +105,20 @@ def get_maki_score(maki_cnt_list):
             maki_score.append(0)
     return maki_score
 
+def get_pudding_score(pudding_cnt_list):
+    pudding_rank = rankdata([_*-1 for _ in pudding_cnt_list], method='min')
+    pudding_score = []
+    lowest_rank = max(pudding_rank)
+    first_count = np.sum(pudding_rank == 1)
+    last_count = np.sum(pudding_rank == lowest_rank)
+    for rank in pudding_rank:
+        if rank == 1:
+            pudding_score.append(6 / first_count)
+        elif rank == lowest_rank:
+            pudding_score.append(-6 / last_count)
+        else:
+            pudding_score.append(0)
+    return pudding_score
 
 def translate_board(board):
     board_list = ast.literal_eval(board)
@@ -128,5 +146,15 @@ def get_actual_card_pool():
     card_pool.extend([7] * 6)
     card_pool.extend([8] * 12)
     card_pool.extend([9] * 8)
+    card_pool.extend([10] * 10)
 
     return card_pool
+
+
+def is_available_action(hand, action):
+    c1 = convert_hand_to_counter(hand)
+    c2 = convert_hand_to_counter(action)
+    for i in range(c2):
+        if c2[i] > c1[i]:
+            return False
+    return True

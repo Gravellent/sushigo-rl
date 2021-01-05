@@ -24,11 +24,10 @@ class State:
 
     def play(self, num_of_rounds=1, output_result=False):
         self.scoreboard = [0] * len(self.players)
-        for r in range(num_of_rounds):
-            # Clean up board
-            for p in self.players:
-                p.board = []
+        for p in self.players:
+            p.prepare_for_next_game()
 
+        for r in range(num_of_rounds):
             self.deal()
             # print(self.players[0].hand, self.players[1].hand)
             for turn in range(self.starting_hand_size): # Round num is same as starting hand sizer
@@ -46,6 +45,11 @@ class State:
             for i in range(len(maki_score)):
                 self.scoreboard[i] += maki_score[i]
 
+        # Adjustment for Pudding
+        pudding_score = get_pudding_score([_.board[11] for _ in self.players])
+        for i in range(len(pudding_score)):
+            self.scoreboard[i] += pudding_score[i]
+
         max_score = max(self.scoreboard)
         if output_result:
             for i, p in enumerate(self.players):
@@ -53,10 +57,11 @@ class State:
                 for i in range(len(p.board)):
                     print(f"{CARD_ON_BOARD[i]} X {p.board[i]}")
             print(self.scoreboard, max_score)
+
         for i, p in enumerate(self.players):
             if self.scoreboard[i] == max_score:
                 self.stats[i] += 1
-                p.feed_reward(max(1, len(self.players) - 1))
+                p.feed_reward(max(1, len(self.players) - 1))  # If there are more than one opponent, put more reward for a win
             else:
                 p.feed_reward(-1)
 
@@ -77,6 +82,7 @@ class State:
     def refresh_state(self):
         self.scoreboard = []
         self.card_pool = copy.copy(self.original_card_pool)
+
 
 from Player import *
 if __name__ == '__main__':

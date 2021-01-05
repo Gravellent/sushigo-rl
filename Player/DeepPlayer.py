@@ -2,16 +2,23 @@ import torch
 from torch import nn, optim
 from utils import *
 from Player import BasePlayer
+import pandas as pd
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 class DeepPlayer(BasePlayer):
 
-    def __init__(self, name, num_of_opponents):
-        super().__init__(name)
-        self.model = Model(len(CARDS) + len(CARD_ON_BOARD) * (num_of_opponents+1)).to(DEVICE)
-        # self.model = Model(len(CARD_ON_BOARD) + len(CARDS))
+    def __init__(self, name, num_of_opponents, memory_turns=0, use_chopsticks=False):
+        self.name = name
+        self.hand = []
+        self.board = [0] * len(CARD_ON_BOARD)
+        feature_size = len(CARDS) + len(CARD_ON_BOARD) * (num_of_opponents+1) + memory_turns * len(CARDS)
+        self.model = LargerModel(feature_size).to(DEVICE)
+        self.memory_turns = memory_turns
+        self.memory = [[0] * len(CARDS) for _ in range(self.memory_turns)]
+        self.use_chopsticks = use_chopsticks
+
         self.criterion = nn.MSELoss().to(DEVICE)
         self.optimizer = optim.SGD(self.model.parameters(), lr=0.01)
         self.decay_gamma = 0.9
@@ -30,24 +37,16 @@ class DeepPlayer(BasePlayer):
         for player, board in all_player_boards:
             if player != self:
                 other_player_board_feature.extend(board)
-        model_input = self.board + convert_hand_to_counter(self.hand) + other_player_board_feature
+        if self.memory_turns > 0:
+            model_input = self.board + convert_hand_to_counter(self.hand) + other_player_board_feature + \
+                      list(pd.core.common.flatten(self.memory))
+        else:
+            model_input = self.board + convert_hand_to_counter(self.hand) + other_player_board_feature
 
         if random.random() < self.exp_rate:
             action = random.choice(self.hand)
 
         else:
-            # Choose based on next board state
-            # max_value = -100
-            # for possible_next_card in set(self.hand):
-            #     board = copy.copy(self.board)
-            #     add_a_card_to_board(board, possible_next_card)
-            #     model_input = board + convert_hand_to_counter(self.hand) + all_player_boards
-            #     # model_input = board + convert_hand_to_counter(self.hand)
-            #     value = self.model(torch.FloatTensor(model_input))
-            #     if value > max_value:
-            #         max_value = value
-            #         action = possible_next_card
-
             # Choose based on action
             action_values = self.model(torch.FloatTensor(model_input))
             action_value_rank = torch.argsort(action_values, descending=True)
@@ -63,6 +62,11 @@ class DeepPlayer(BasePlayer):
         # Add state to memory
         # self.states_in_game.append(self.board + convert_hand_to_counter(self.hand))
         self.states_in_game.append((model_input, action))
+
+        # Add hand to memory for model input
+        if self.memory_turns > 0:
+            self.memory.append(convert_hand_to_counter(self.hand))
+            self.memory = self.memory[(-1 * self.memory_turns):]
 
     def get_score(self):
         return get_score(self.board)
@@ -80,9 +84,9 @@ class DeepPlayer(BasePlayer):
             reward *= self.decay_gamma
 
     def prepare_for_next_round(self):
-        self.hand = []
-        self.board = [0] * len(CARD_ON_BOARD)
+        super().prepare_for_next_round()
         self.states_in_game = []
+        self.memory = [[0]*len(CARDS) for _ in range(self.memory_turns)]
 
 
 class Model(torch.nn.Module):
@@ -106,15 +110,16 @@ class Model(torch.nn.Module):
         out = self.linear4(out)
         return out
 
+
 class LargerModel(torch.nn.Module):
 
     def __init__(self, feature_size):
         super(LargerModel, self).__init__()
         self.linear1 = torch.nn.Linear(feature_size, 256)
         self.linear2 = torch.nn.Linear(256, 128)
-        self.linear3 = torch.nn.Linear(128, 32)
-        self.linear4 = torch.nn.Linear(32, 16)
-        self.linear5 = torch.nn.Linear(16, len(CARDS))
+        self.linear3 = torch.nn.Linear(128, 128)
+        self.linear4 = torch.nn.Linear(128, 64)
+        self.linear5 = torch.nn.Linear(64, len(CARDS))
         self.relu = nn.ReLU()
 
     def forward(self, x):

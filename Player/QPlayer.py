@@ -51,7 +51,6 @@ class QPlayer(BasePlayer):
             reward *= self.decay_gamma
 
     def prepare_for_next_round(self):
-        self.hand = []
-        self.board = [0] * len(CARD_ON_BOARD)
+        super().prepare_for_next_round()
         self.states_in_game = []
         self.states_in_game.append(str(self.board))

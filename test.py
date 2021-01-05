@@ -117,3 +117,62 @@ class TestState(unittest.TestCase):
         self.p1 = RandomPlayer("Random")
         self.state.add_player(self.p1)
         self.state.play_games(num_of_games=1, output_result=False, round_per_game=3)
+
+    def test_pudding(self):
+        card_pool = [10] * 10
+        self.state = State(card_pool)
+        self.state.starting_hand_size = 3
+        self.state.refresh_state()
+        self.p1 = DeepPlayer("Random", num_of_opponents=0)
+        self.state.add_player(self.p1)
+        self.state.play_games(num_of_games=1, output_result=False, round_per_game=3)
+        assert self.p1.board[11] == 9
+
+    def test_pudding_scoring(self):
+        pudding_cnt = [5, 5, 1]
+        score = get_pudding_score(pudding_cnt)
+        assert score == [3, 3, -6]
+
+        pudding_cnt = [5, 5, 5, 5]
+        score = get_pudding_score(pudding_cnt)
+        assert score == [1.5, 1.5, 1.5, 1.5]
+
+    def test_normal_game(self):
+        card_pool = get_actual_card_pool()
+        self.state = State(card_pool)
+        self.state.starting_hand_size = 8
+        self.state.refresh_state()
+        self.p1 = RandomPlayer("Random")
+        self.p2 = DeepPlayer("Deep", num_of_opponents=1, memory_turns=1)
+        self.state.add_player(self.p1)
+        self.state.add_player(self.p2)
+        self.state.play_games(num_of_games=1, output_result=False, round_per_game=3)
+
+
+    def test_four_player(self):
+        state = State(get_actual_card_pool())
+        p1 = DeepPlayer('Deep Learning', num_of_opponents=3)
+        p2 = QPlayer('Q Learning')
+        p3 = RulePlayer('Rule Based')
+        p4 = DeepPlayer('Deep w/ Memory', num_of_opponents=3, memory_turns=3)
+        state.add_player(p1)
+        state.add_player(p2)
+        state.add_player(p3)
+        state.add_player(p4)
+        state.starting_hand_size = 8
+        df = pd.DataFrame()
+        all_results = []
+        hit_rates = []
+
+        for i in range(5):
+            # Train
+            p1.exp_rate = 0.3
+            p2.exp_rate = 0.3
+            state.play_games(200, round_per_game=3)
+
+            # Eval
+            p1.exp_rate = 0
+            p2.exp_rate = 0
+            state.stats = []
+            state.play_games(200, round_per_game=3)
+            all_results.append(state.stats)
