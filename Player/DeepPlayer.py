@@ -48,7 +48,7 @@ class DeepPlayer(BasePlayer):
 
         else:
             # Choose based on action
-            action_values = self.model(torch.FloatTensor(model_input))
+            action_values = self.model(torch.FloatTensor(model_input)).to(DEVICE)
             action_value_rank = torch.argsort(action_values, descending=True)
             for r in action_value_rank:
                 if r.item() in self.hand:
